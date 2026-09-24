@@ -48,6 +48,14 @@ app.get('/health', (req, res) => {
   res.status(200).json({ ok: true });
 });
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'Vinmoore contact API',
+    endpoints: ['/health', '/send-email']
+  });
+});
+
 // Email sending route
 app.post('/send-email', async (req, res) => {
   const name = String(req.body.name || '').trim();
@@ -122,10 +130,16 @@ app.post('/send-email', async (req, res) => {
     res.status(200).json({ message: 'Email sent successfully' });
   } catch (error) {
     console.error('Error sending email:', error);
+    const smtpDetails = [
+      error.responseCode ? `SMTP ${error.responseCode}` : null,
+      error.command ? `during ${error.command}` : null,
+      error.response || error.message
+    ].filter(Boolean).join(' ');
+
     res.status(500).json({
       error: 'Error sending email',
-      details: process.env.NODE_ENV === 'production' ? undefined : error.message,
-      smtp: process.env.NODE_ENV === 'production' ? undefined : {
+      details: smtpDetails || 'The mail server rejected the message',
+      smtp: {
         code: error.code,
         command: error.command,
         responseCode: error.responseCode,
